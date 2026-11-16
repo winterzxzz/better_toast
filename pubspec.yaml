@@ -1,10 +1,17 @@
 name: better_toast
-description: >-
-  Beautiful, highly customizable toasts for Flutter. Show from anywhere,
-  stack and queue, update by id, promise toasts, theming and custom builders.
+description: "Customizable toast notifications for Flutter: a snackbar alternative you can show with no context. Stacking, queue, update by id, promise toasts and theming."
 version: 0.1.0
 repository: https://github.com/winterzxzz/better_toast
 issue_tracker: https://github.com/winterzxzz/better_toast/issues
+screenshots:
+  - description: Info, warning, error and success toasts stacked at the top.
+    path: doc/screenshots/types.webp
+  - description: Dark theme toasts at the bottom with a progress bar and actions.
+    path: doc/screenshots/dark_bottom.webp
+  - description: A glassmorphism toast style made with one ToastStyle.
+    path: doc/screenshots/glass.webp
+  - description: A custom builder toast and per-type colors.
+    path: doc/screenshots/custom.webp
 topics:
   - toast
   - notification
