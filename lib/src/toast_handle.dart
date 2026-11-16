@@ -66,6 +66,10 @@ typedef ToastTransitionBuilder = Widget Function(
 /// The getters return the current content, which is useful in a
 /// [ToastBuilder].
 abstract class ToastHandle {
+  /// Lets subclasses be const. Toasts are created by `BetterToast`; you only
+  /// implement this class for test doubles.
+  const ToastHandle();
+
   /// The id of the toast. Showing a toast with the same id updates this
   /// toast instead of adding a new one.
   ///

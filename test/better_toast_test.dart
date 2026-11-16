@@ -593,6 +593,26 @@ void main() {
       expect(find.text('Custom chip'), findsNothing);
     });
 
+    testWidgets('custom toast keeps its state while it exits',
+        (WidgetTester tester) async {
+      await pumpToastApp(tester);
+      int inits = 0;
+      final ToastHandle handle = BetterToast.custom(
+        duration: Duration.zero,
+        builder: (BuildContext context, ToastHandle handle) =>
+            _CountsInits(onInit: () => inits++),
+      );
+      await settleIn(tester);
+      expect(inits, 1);
+      handle.dismiss();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byType(_CountsInits), findsOneWidget);
+      expect(inits, 1);
+      await settleOut(tester);
+      expect(find.byType(_CountsInits), findsNothing);
+    });
+
     testWidgets('theme builder replaces the default visual',
         (WidgetTester tester) async {
       await pumpToastApp(
@@ -920,4 +940,24 @@ class _ShowsInInitStateState extends State<_ShowsInInitState> {
 
   @override
   Widget build(BuildContext context) => const SizedBox();
+}
+
+class _CountsInits extends StatefulWidget {
+  const _CountsInits({required this.onInit});
+
+  final VoidCallback onInit;
+
+  @override
+  State<_CountsInits> createState() => _CountsInitsState();
+}
+
+class _CountsInitsState extends State<_CountsInits> {
+  @override
+  void initState() {
+    super.initState();
+    widget.onInit();
+  }
+
+  @override
+  Widget build(BuildContext context) => const Text('counts');
 }

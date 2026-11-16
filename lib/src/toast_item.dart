@@ -271,10 +271,16 @@ class _ToastItemState extends State<ToastItem> with TickerProviderStateMixin {
       ),
     );
 
-    if ((_config.dismissible ?? _theme.dismissible!) && !_exiting) {
+    // Keep the Dismissible in the tree while exiting, so the widgets below
+    // keep their state; only turn swiping off.
+    if (_config.dismissible ?? _theme.dismissible!) {
       toast = Dismissible(
         key: ObjectKey(_entry),
-        direction: _isCorner ? DismissDirection.horizontal : _swipeDirection,
+        direction: _exiting
+            ? DismissDirection.none
+            : _isCorner
+                ? DismissDirection.horizontal
+                : _swipeDirection,
         onUpdate: (DismissUpdateDetails details) {
           final bool dragging = details.progress > 0;
           if (dragging != _dragging) {
