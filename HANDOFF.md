@@ -50,7 +50,7 @@ pana 160/160 is Engineer-reported only (not re-run by Lead).
    `doc/slp/reviewer.md` on env `env_pwwqkt6snx`.)
 2. Blockers/should-fix → send to an Engineer (resume `thr_9pgk5a8bgz` or a
    new Engineer in its worktree), then re-verify.
-3. Lead re-runs checks + pana, merges branch into `main`, adds `HANDOFF.md`
+3. Lead re-runs checks + pana, merges branch into `main`, adds `HANDOFF.md` and `doc/slp/`
    to `.pubignore`, pushes, gives verdict to Human.
 4. Human: make repo public, `git tag v0.1.0`, `flutter pub publish`.
 5. Archive Peers after verdict (`bb thread archive <id>`; integrate first).
