@@ -436,8 +436,8 @@ class DefaultToastView extends StatelessWidget {
       if (action != null) ...<Widget>[
         const SizedBox(width: 8),
         TextButton(
-          style:
-              s.actionStyle?.merge(_actionBaseStyle(s)) ?? _actionBaseStyle(s),
+          style: s.actionStyle?.merge(_actionBaseStyle(context, s)) ??
+              _actionBaseStyle(context, s),
           onPressed: () {
             action.onPressed();
             if (action.dismissOnPressed) {
@@ -509,14 +509,15 @@ class DefaultToastView extends StatelessWidget {
             ? null
             : <BoxShadow>[
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: dark ? 0.32 : 0.08),
-                  blurRadius: elevation * 3,
-                  offset: Offset(0, elevation),
+                  color: Colors.black.withValues(alpha: dark ? 0.36 : 0.10),
+                  blurRadius: elevation * 4,
+                  spreadRadius: -elevation / 2,
+                  offset: Offset(0, elevation * 0.75),
                 ),
                 BoxShadow(
                   color: Colors.black.withValues(alpha: dark ? 0.2 : 0.04),
-                  blurRadius: elevation,
-                  offset: Offset(0, elevation / 3),
+                  blurRadius: elevation / 2,
+                  offset: Offset(0, elevation / 6),
                 ),
               ]);
 
@@ -544,11 +545,14 @@ class DefaultToastView extends StatelessWidget {
     );
   }
 
-  static ButtonStyle _actionBaseStyle(ToastStyle s) {
+  static ButtonStyle _actionBaseStyle(BuildContext context, ToastStyle s) {
+    // Extend the theme's button text style, so the app font is kept.
+    final TextStyle label =
+        Theme.of(context).textTheme.labelLarge ?? const TextStyle();
     return TextButton.styleFrom(
       foregroundColor: s.iconColor,
       visualDensity: VisualDensity.compact,
-      textStyle: const TextStyle(fontWeight: FontWeight.w600),
+      textStyle: label.copyWith(fontWeight: FontWeight.w600),
     );
   }
 

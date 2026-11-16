@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:better_toast/better_toast.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers.dart';
@@ -69,6 +70,19 @@ void main() {
       expect(handle.isActive, isFalse);
       await settleOut(tester);
       expect(find.text('Archived'), findsNothing);
+    });
+
+    testWidgets('action label keeps the app font', (WidgetTester tester) async {
+      await pumpToastApp(tester, appTheme: ThemeData(fontFamily: 'Brand'));
+      BetterToast.show(
+        'Font',
+        action: ToastAction(label: 'Undo', onPressed: () {}),
+      );
+      await settleIn(tester);
+      final RenderParagraph label =
+          tester.renderObject<RenderParagraph>(find.text('Undo'));
+      expect(label.text.style!.fontFamily, 'Brand');
+      expect(label.text.style!.fontWeight, FontWeight.w600);
     });
 
     testWidgets('close button dismisses', (WidgetTester tester) async {
