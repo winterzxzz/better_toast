@@ -285,6 +285,70 @@ void main() {
     });
   });
 
+  group('S7 app lifecycle', () {
+    testWidgets('timers pause while the app is in the background',
+        (WidgetTester tester) async {
+      addTearDown(
+        () => tester.binding
+            .handleAppLifecycleStateChanged(AppLifecycleState.resumed),
+      );
+      await pumpToastApp(tester);
+      final ToastHandle handle =
+          BetterToast.show('bg', duration: const Duration(seconds: 4));
+      await settleIn(tester);
+      await tester.pump(const Duration(seconds: 1));
+      final double before = handle.progress.value;
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump(const Duration(seconds: 10));
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      // The 10 s in the background did not count.
+      expect(handle.isActive, isTrue);
+      expect(handle.progress.value, closeTo(before - 0.1 / 4, 0.02));
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('bg'), findsOneWidget);
+      expect(handle.isActive, isTrue);
+
+      await tester.pump(const Duration(seconds: 3));
+      await settleOut(tester);
+      expect(find.text('bg'), findsNothing);
+    });
+
+    testWidgets('a manually paused toast stays paused after resume',
+        (WidgetTester tester) async {
+      addTearDown(
+        () => tester.binding
+            .handleAppLifecycleStateChanged(AppLifecycleState.resumed),
+      );
+      await pumpToastApp(tester);
+      final ToastHandle handle =
+          BetterToast.show('manual', duration: const Duration(seconds: 2));
+      await settleIn(tester);
+      handle.pause();
+      await tester.pump();
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      await tester.pump(const Duration(seconds: 5));
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 5));
+      await settleOut(tester);
+      expect(find.text('manual'), findsOneWidget);
+
+      handle.resume();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 3));
+      await settleOut(tester);
+      expect(find.text('manual'), findsNothing);
+    });
+  });
+
   group('nits', () {
     testWidgets('raising maxVisible releases queued toasts',
         (WidgetTester tester) async {

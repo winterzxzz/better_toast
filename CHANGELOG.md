@@ -28,6 +28,9 @@ Initial release.
   progress bar, close button and more.
 * Swipe to dismiss, pause on hover and on touch, optional progress bar,
   action button, close button.
+* Timers pause while the app is not in the foreground (any
+  `AppLifecycleState` other than `resumed`) and continue where they left off;
+  a toast paused with `handle.pause()` stays paused.
 * Accessibility: live-region announcements, reduce-motion support, text
   scaling and RTL. Toasts with an action stay until closed while
   `accessibleNavigation` is on, and the close button has a 48x48 tap target. Light and dark defaults from the app's `ColorScheme`.

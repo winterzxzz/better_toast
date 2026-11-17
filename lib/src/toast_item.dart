@@ -63,6 +63,7 @@ class _ToastItemState extends State<ToastItem> with TickerProviderStateMixin {
     _entry
       ..owner = this
       ..addListener(_handleEntryChanged);
+    _entry.host.appResumed.addListener(_syncTimer);
     _visibility = AnimationController(vsync: this);
     _curved = _createCurve();
   }
@@ -142,6 +143,7 @@ class _ToastItemState extends State<ToastItem> with TickerProviderStateMixin {
     final bool pauseOnHover = _config.pauseOnHover ?? _theme.pauseOnHover!;
     final bool pauseOnTouch = _config.pauseOnTouch ?? _theme.pauseOnTouch!;
     return _entry.manuallyPaused ||
+        !_entry.host.appResumed.value ||
         _dragging ||
         (pauseOnHover && _hovered) ||
         (pauseOnTouch && _pressed);
@@ -233,6 +235,7 @@ class _ToastItemState extends State<ToastItem> with TickerProviderStateMixin {
   @override
   void dispose() {
     _entry.removeListener(_handleEntryChanged);
+    _entry.host.appResumed.removeListener(_syncTimer);
     if (identical(_entry.owner, this)) {
       _entry.owner = null;
     }

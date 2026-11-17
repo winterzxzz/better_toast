@@ -87,6 +87,16 @@ class ToastHost extends State<BetterToastScope> {
   late BetterToastThemeData _theme;
   bool _disposed = false;
   int _nextId = 0;
+  late final AppLifecycleListener _lifecycle;
+
+  /// Whether the app is in the foreground ([AppLifecycleState.resumed]).
+  ///
+  /// Toast timers pause while this is `false`. Frame time stamps keep
+  /// running in the background, so a running timer would otherwise jump
+  /// ahead on the first frame after the app comes back. Toast widgets
+  /// listen to this directly: the change must stop timers before the next
+  /// frame ticks them, which a rebuild would not guarantee.
+  final ValueNotifier<bool> appResumed = ValueNotifier<bool>(true);
 
   late final OverlayEntry _childEntry = OverlayEntry(
     builder: (BuildContext context) => widget.child,
@@ -116,6 +126,13 @@ class ToastHost extends State<BetterToastScope> {
     super.initState();
     _theme = BetterToastThemeData.fallback.merge(widget.theme);
     active.add(this);
+    final AppLifecycleState? state = WidgetsBinding.instance.lifecycleState;
+    appResumed.value = state == null || state == AppLifecycleState.resumed;
+    _lifecycle = AppLifecycleListener(
+      onStateChange: (AppLifecycleState state) {
+        appResumed.value = state == AppLifecycleState.resumed;
+      },
+    );
   }
 
   @override
@@ -129,6 +146,7 @@ class ToastHost extends State<BetterToastScope> {
   void dispose() {
     _disposed = true;
     active.remove(this);
+    _lifecycle.dispose();
     final List<ToastEntry> entries = <ToastEntry>[..._visible, ..._queue];
     _visible.clear();
     _queue.clear();
@@ -141,6 +159,7 @@ class ToastHost extends State<BetterToastScope> {
     _layerEntry
       ..remove()
       ..dispose();
+    appResumed.dispose();
     super.dispose();
   }
 
