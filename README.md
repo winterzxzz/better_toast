@@ -22,9 +22,11 @@ fully custom widget. Pure Dart, zero dependencies, every platform.
 ## Contents
 
 - [Features](#features)
+- [Why better_toast?](#why-better_toast)
 - [Screenshots](#screenshots)
 - [Installation](#installation)
 - [Quick start](#quick-start)
+- [Migrating from SnackBar](#migrating-from-snackbar)
 - [Customization](#customization)
 - [API overview](#api-overview)
 - [Example app](#example-app)
@@ -59,6 +61,27 @@ fully custom widget. Pure Dart, zero dependencies, every platform.
   scaling, RTL, light and dark defaults from your `ColorScheme`.
 - 🧭 **Navigation-proof**: toasts live in an overlay above the `Navigator`, so
   they survive route changes.
+
+## Why better_toast?
+
+Flutter's built-in `SnackBar` needs a `BuildContext` below a `Scaffold`, shows
+one message at a time and stays at the bottom of the screen. better_toast is
+an in-app notification layer for the cases a snackbar does not cover:
+
+| | `SnackBar` | better_toast |
+| --- | :---: | :---: |
+| Show without a `BuildContext` (from a service, bloc, repository) | ❌ | ✅ |
+| Works without a `Scaffold` | ❌ | ✅ |
+| Several messages visible at once | ❌ | ✅ |
+| Top, center, bottom and corner positions | ❌ | ✅ |
+| Update a visible message in place | ❌ | ✅ |
+| Loading → success / error from a `Future` | ❌ | ✅ |
+| Typed success, error, warning and info looks | ❌ | ✅ |
+| Fully custom widget as the message | ⚠️ content only | ✅ |
+| Extra dependencies | none | none |
+
+Use it for success and error messages, undo actions, upload and download
+progress, network errors, form feedback, and in-app alerts or banners.
 
 ## Screenshots
 
@@ -164,6 +187,42 @@ final user = await BetterToast.promise(
   loading: 'Loading profile…',
   success: (user) => 'Welcome back, ${user.name}',
   error: (error) => 'Could not load your profile',
+);
+```
+
+## Migrating from SnackBar
+
+One call replaces `ScaffoldMessenger.of(context).showSnackBar(...)`, and the
+`context` is no longer needed:
+
+```dart
+// Before
+ScaffoldMessenger.of(context).showSnackBar(
+  SnackBar(
+    content: const Text('Message archived'),
+    action: SnackBarAction(label: 'Undo', onPressed: restoreMessage),
+  ),
+);
+
+// After
+BetterToast.success(
+  'Message archived',
+  position: ToastPosition.bottom,
+  action: ToastAction(label: 'Undo', onPressed: restoreMessage),
+);
+```
+
+To keep the snackbar behavior (one message at a time, at the bottom) for the
+whole app, set it once in the theme:
+
+```dart
+MaterialApp(
+  builder: BetterToast.init(
+    theme: const BetterToastThemeData(
+      position: ToastPosition.bottom,
+      stackMode: ToastStackMode.queue,
+    ),
+  ),
 );
 ```
 
