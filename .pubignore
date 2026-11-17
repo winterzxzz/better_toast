@@ -29,3 +29,7 @@ AGENTS.md
 CLAUDE.md
 DESIGN.md
 example/build/
+
+# Session handoff and SLP assignment notes.
+HANDOFF.md
+doc/slp/
