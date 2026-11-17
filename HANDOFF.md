@@ -54,3 +54,14 @@ pana 160/160 is Engineer-reported only (not re-run by Lead).
    to `.pubignore`, pushes, gives verdict to Human.
 4. Human: make repo public, `git tag v0.1.0`, `flutter pub publish`.
 5. Archive Peers after verdict (`bb thread archive <id>`; integrate first).
+
+## Update 2026-11-17 (Paseo Lead, session 2) — supersedes the state above
+- Candidate 6eccfa0 merged; review findings S1–S7 + 4 nits fixed with
+  regression tests (`test/review_fixes_test.dart`); screenshots regenerated
+  (7 stills + animated `demo.webp`) by `example/tool/make_screenshots.sh`;
+  README/pubspec screenshots finalized. `main` fast-forwarded locally, NOT pushed.
+- Gates on main: format clean · analyze 0 (pkg + example) · 79/79 tests ·
+  README snippets compile · `pub publish --dry-run` 0 warnings (archive 1 MB).
+- Not run: pana (not installed on this host), real-device run, Flutter 3.27.
+- Human steps: push `main`, make repo public, run `pana` (optional),
+  `git tag v0.1.0 && git push --tags`, `flutter pub publish`.
