@@ -86,6 +86,7 @@ class _ShowcaseAppState extends State<ShowcaseApp> {
       // One line adds the toast host above the navigator.
       builder: BetterToast.init(
         theme: _toastTheme,
+        // Wraps the toast host too, so the RTL switch flips the toasts.
         builder: (context, child) => Directionality(
           textDirection: _rtl ? TextDirection.rtl : TextDirection.ltr,
           child: child!,

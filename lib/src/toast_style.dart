@@ -309,7 +309,9 @@ class ToastStyle with Diagnosticable {
   /// Linearly interpolates between two styles.
   ///
   /// Fields that cannot be interpolated, such as [icon] or [showIcon],
-  /// switch from [a] to [b] at `t == 0.5`.
+  /// switch from [a] to [b] at `t == 0.5`. A size, such as [maxWidth],
+  /// [padding] or [borderRadius], that is set on one side only keeps that
+  /// value instead of shrinking toward zero.
   static ToastStyle? lerp(ToastStyle? a, ToastStyle? b, double t) {
     if (identical(a, b)) {
       return a;
@@ -324,21 +326,21 @@ class ToastStyle with Diagnosticable {
       iconColor: Color.lerp(a.iconColor, b.iconColor, t),
       icon: pick(a.icon, b.icon),
       showIcon: pick(a.showIcon, b.showIcon),
-      iconSize: lerpDouble(a.iconSize, b.iconSize, t),
+      iconSize: lerpSize(a.iconSize, b.iconSize, t, lerpDouble),
       titleStyle: TextStyle.lerp(a.titleStyle, b.titleStyle, t),
       messageStyle: TextStyle.lerp(a.messageStyle, b.messageStyle, t),
       descriptionStyle:
           TextStyle.lerp(a.descriptionStyle, b.descriptionStyle, t),
-      padding: EdgeInsetsGeometry.lerp(a.padding, b.padding, t),
-      margin: EdgeInsetsGeometry.lerp(a.margin, b.margin, t),
-      borderRadius:
-          BorderRadiusGeometry.lerp(a.borderRadius, b.borderRadius, t),
+      padding: lerpSize(a.padding, b.padding, t, EdgeInsetsGeometry.lerp),
+      margin: lerpSize(a.margin, b.margin, t, EdgeInsetsGeometry.lerp),
+      borderRadius: lerpSize(
+          a.borderRadius, b.borderRadius, t, BorderRadiusGeometry.lerp),
       border: BoxBorder.lerp(a.border, b.border, t),
       shadows: BoxShadow.lerpList(a.shadows, b.shadows, t),
-      blur: lerpDouble(a.blur, b.blur, t),
-      elevation: lerpDouble(a.elevation, b.elevation, t),
-      width: lerpDouble(a.width, b.width, t),
-      maxWidth: lerpDouble(a.maxWidth, b.maxWidth, t),
+      blur: lerpSize(a.blur, b.blur, t, lerpDouble),
+      elevation: lerpSize(a.elevation, b.elevation, t, lerpDouble),
+      width: lerpSize(a.width, b.width, t, lerpDouble),
+      maxWidth: lerpSize(a.maxWidth, b.maxWidth, t, lerpDouble),
       contentAlignment: pick(a.contentAlignment, b.contentAlignment),
       progressBarColor: Color.lerp(a.progressBarColor, b.progressBarColor, t),
       progressBarBackgroundColor: Color.lerp(
@@ -347,7 +349,7 @@ class ToastStyle with Diagnosticable {
         t,
       ),
       progressBarHeight:
-          lerpDouble(a.progressBarHeight, b.progressBarHeight, t),
+          lerpSize(a.progressBarHeight, b.progressBarHeight, t, lerpDouble),
       showCloseButton: pick(a.showCloseButton, b.showCloseButton),
       closeIcon: pick(a.closeIcon, b.closeIcon),
       actionStyle: ButtonStyle.lerp(a.actionStyle, b.actionStyle, t),
@@ -418,4 +420,20 @@ class ToastStyle with Diagnosticable {
       ..add(FlagProperty('showCloseButton',
           value: showCloseButton, ifTrue: 'close button'));
   }
+}
+
+/// Interpolates a size field with [lerp], but when only one side is set,
+/// returns that side unchanged instead of shrinking it toward zero.
+///
+/// A `null` size means "inherit", not zero. Internal; not exported.
+T? lerpSize<T extends Object>(
+  T? a,
+  T? b,
+  double t,
+  T? Function(T? a, T? b, double t) lerp,
+) {
+  if (a == null || b == null) {
+    return a ?? b;
+  }
+  return lerp(a, b, t);
 }

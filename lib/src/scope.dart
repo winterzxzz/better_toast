@@ -251,6 +251,11 @@ class ToastHost extends State<BetterToastScope> {
   @override
   Widget build(BuildContext context) {
     _theme = resolveToastTheme(context, widget.theme);
+    // A new maxVisible or stackMode can free slots for queued toasts.
+    if (_queue.isNotEmpty && _activeVisibleCount < _limit) {
+      _promote();
+      _changed();
+    }
     Widget result = Overlay(
       initialEntries: <OverlayEntry>[_childEntry, _layerEntry],
     );

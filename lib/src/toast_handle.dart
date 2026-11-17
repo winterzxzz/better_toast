@@ -118,9 +118,22 @@ abstract class ToastHandle {
 
   /// Changes the content of the toast in place and restarts its timer.
   ///
-  /// Only the given arguments change. [duration] follows the same rules as
-  /// in [BetterToast.show]. Does nothing if the toast is no longer
-  /// [isActive].
+  /// This merges: only the given arguments change, and `null` keeps the
+  /// current value. To remove a field, set its `clear*` flag, for example
+  /// to drop the action button when a loading toast succeeds:
+  ///
+  /// ```dart
+  /// handle.update(text: 'Uploaded', type: ToastType.success, clearAction: true);
+  /// ```
+  ///
+  /// A `clear*` flag is ignored when the matching value is also given.
+  /// In contrast, showing a toast again with the same `id` (for example
+  /// `BetterToast.show(..., id: id)`) replaces the whole configuration.
+  ///
+  /// [duration] follows the same rules as in [BetterToast.show]: when the
+  /// toast was shown without a duration and [type] changes from
+  /// [ToastType.loading] to another type, the theme duration starts.
+  /// Does nothing if the toast is no longer [isActive].
   void update({
     String? text,
     Widget? message,
@@ -132,6 +145,10 @@ abstract class ToastHandle {
     ToastAction? action,
     bool? showProgressBar,
     ToastBuilder? builder,
+    bool clearTitle = false,
+    bool clearDescription = false,
+    bool clearAction = false,
+    bool clearStyle = false,
   });
 
   /// Stops the auto-dismiss timer until [resume] is called.

@@ -115,19 +115,23 @@ class ToastConfig {
     ToastAction? action,
     bool? showProgressBar,
     ToastBuilder? builder,
+    bool clearTitle = false,
+    bool clearDescription = false,
+    bool clearAction = false,
+    bool clearStyle = false,
   }) {
     return ToastConfig(
       type: type ?? this.type,
       text: text ?? this.text,
       message: message ?? this.message,
-      title: title ?? this.title,
-      description: description ?? this.description,
+      title: title ?? (clearTitle ? null : this.title),
+      description: description ?? (clearDescription ? null : this.description),
       duration: duration ?? this.duration,
       position: position,
       animation: animation,
       transitionBuilder: transitionBuilder,
-      style: style ?? this.style,
-      action: action ?? this.action,
+      style: style ?? (clearStyle ? null : this.style),
+      action: action ?? (clearAction ? null : this.action),
       dismissible: dismissible,
       pauseOnHover: pauseOnHover,
       pauseOnTouch: pauseOnTouch,
@@ -194,8 +198,15 @@ class ToastEntry extends ChangeNotifier implements ToastHandle {
   /// Increments whenever the content changes. A change restarts the timer.
   int version = 0;
 
+  /// The toast widget state that currently shows this entry, if any.
+  ///
+  /// When a toast moves to another position, the new widget is created
+  /// before the old one is disposed, so ownership is tracked by object
+  /// rather than by a flag.
+  Object? owner;
+
   /// Whether a toast widget currently shows this entry.
-  bool attached = false;
+  bool get attached => owner != null;
 
   bool _manuallyPaused = false;
 
@@ -254,6 +265,10 @@ class ToastEntry extends ChangeNotifier implements ToastHandle {
     ToastAction? action,
     bool? showProgressBar,
     ToastBuilder? builder,
+    bool clearTitle = false,
+    bool clearDescription = false,
+    bool clearAction = false,
+    bool clearStyle = false,
   }) {
     if (!isActive) {
       return;
@@ -269,6 +284,10 @@ class ToastEntry extends ChangeNotifier implements ToastHandle {
       action: action,
       showProgressBar: showProgressBar,
       builder: builder,
+      clearTitle: clearTitle,
+      clearDescription: clearDescription,
+      clearAction: clearAction,
+      clearStyle: clearStyle,
     );
     version++;
     changed();
@@ -308,15 +327,37 @@ class ToastEntry extends ChangeNotifier implements ToastHandle {
     });
   }
 
-  /// Marks the entry removed, completes [closed] and calls `onDismissed`.
+  /// Marks the entry removed, then calls `onDismissed` and completes
+  /// [closed].
+  ///
+  /// The callback runs in a microtask, never synchronously: [finish] can be
+  /// called while the widget tree is locked (for example when the host is
+  /// unmounted), where a `setState` in the callback would throw. An
+  /// exception thrown by the callback is reported to [FlutterError.onError]
+  /// and [closed] still completes.
   void finish() {
     if (status == ToastEntryStatus.removed) {
       return;
     }
     status = ToastEntryStatus.removed;
     _progress.value = 0;
-    _closed.complete();
-    _config.onDismissed?.call();
+    final VoidCallback? onDismissed = _config.onDismissed;
+    scheduleMicrotask(() {
+      try {
+        onDismissed?.call();
+      } catch (exception, stack) {
+        FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: exception,
+            stack: stack,
+            library: 'better_toast',
+            context: ErrorDescription('while calling onDismissed of a toast'),
+          ),
+        );
+      } finally {
+        _closed.complete();
+      }
+    });
   }
 
   @override

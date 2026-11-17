@@ -49,12 +49,20 @@ abstract final class BetterToast {
   /// Returns a [MaterialApp.builder] (or [WidgetsApp.builder]) that adds a
   /// [BetterToastScope] above the navigator.
   ///
-  /// Pass your own [builder] to chain it; it runs inside the scope.
+  /// Pass your own [builder] to chain it. It wraps the scope: its `child`
+  /// argument is the [BetterToastScope] (which contains the navigator), so
+  /// whatever it adds above `child`, such as a [Directionality], a
+  /// [MediaQuery] text scale, a [Theme] or [Localizations], applies to the
+  /// toasts as well as to the app.
   ///
   /// ```dart
   /// MaterialApp(
   ///   builder: BetterToast.init(
   ///     theme: const BetterToastThemeData(maxVisible: 5),
+  ///     builder: (context, child) => Directionality(
+  ///       textDirection: TextDirection.rtl,
+  ///       child: child!,
+  ///     ),
   ///   ),
   ///   home: const HomePage(),
   /// );
@@ -64,11 +72,11 @@ abstract final class BetterToast {
     TransitionBuilder? builder,
   }) {
     return (BuildContext context, Widget? child) {
-      final Widget? inner = builder == null ? child : builder(context, child);
-      return BetterToastScope(
+      final Widget scope = BetterToastScope(
         theme: theme,
-        child: inner ?? const SizedBox.shrink(),
+        child: child ?? const SizedBox.shrink(),
       );
+      return builder == null ? scope : builder(context, scope);
     };
   }
 
@@ -106,6 +114,11 @@ abstract final class BetterToast {
     Object? id,
     BuildContext? context,
   }) {
+    assert(
+      text != null || message != null || title != null || description != null,
+      'A BetterToast needs content: pass text, message, title or '
+      'description. Use BetterToast.custom() for a fully custom toast.',
+    );
     return _show(
       ToastConfig(
         type: type,
@@ -437,6 +450,13 @@ abstract final class BetterToast {
   /// as in [show]. If the toast was dismissed before [future] completes, no
   /// new toast is shown.
   ///
+  /// [success] and [error] should not throw. If [success] throws, the
+  /// loading toast is closed and the returned future completes with that
+  /// exception; it is not shown as an error toast. If [error] throws, the
+  /// loading toast is closed, the callback exception is reported to
+  /// [FlutterError.onError], and the returned future completes with the
+  /// error of [future].
+  ///
   /// ```dart
   /// final user = await BetterToast.promise(
   ///   api.fetchUser(),
@@ -471,18 +491,41 @@ abstract final class BetterToast {
       id: id,
       context: context,
     );
+    final T value;
     try {
-      final T value = await future;
-      handle.update(
-        text: success(value),
-        type: ToastType.success,
-        duration: duration,
-      );
-      return value;
-    } catch (e) {
-      handle.update(text: error(e), type: ToastType.error, duration: duration);
+      value = await future;
+    } catch (e, stackTrace) {
+      final String text;
+      try {
+        text = error(e);
+      } catch (callbackError, stack) {
+        // A bug in the callback must not hide the original error.
+        handle.dismiss();
+        FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: callbackError,
+            stack: stack,
+            library: 'better_toast',
+            context: ErrorDescription('while running the error callback of '
+                'BetterToast.promise'),
+          ),
+        );
+        Error.throwWithStackTrace(e, stackTrace);
+      }
+      handle.update(text: text, type: ToastType.error, duration: duration);
       rethrow;
     }
+    final String text;
+    try {
+      text = success(value);
+    } catch (_) {
+      // Not an error of [future]: close the loading toast and let the
+      // exception of the callback complete the returned future.
+      handle.dismiss();
+      rethrow;
+    }
+    handle.update(text: text, type: ToastType.success, duration: duration);
+    return value;
   }
 
   /// Closes the active toast with [id], in every scope.

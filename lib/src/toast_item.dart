@@ -1,6 +1,8 @@
+import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import 'entry.dart';
 import 'enums.dart';
@@ -45,6 +47,7 @@ class _ToastItemState extends State<ToastItem> with TickerProviderStateMixin {
   bool _hovered = false;
   bool _pressed = false;
   bool _dragging = false;
+  bool _accessibleNavigation = false;
 
   ToastEntry get _entry => widget.entry;
   ToastConfig get _config => _entry.config;
@@ -53,8 +56,12 @@ class _ToastItemState extends State<ToastItem> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    // A toast moved to another position gets a new widget, created before
+    // the old one is disposed. Claim the entry; the old state only releases
+    // it if it still owns it. The new widget plays the enter animation at
+    // its new position.
     _entry
-      ..attached = true
+      ..owner = this
       ..addListener(_handleEntryChanged);
     _visibility = AnimationController(vsync: this);
     _curved = _createCurve();
@@ -72,6 +79,14 @@ class _ToastItemState extends State<ToastItem> with TickerProviderStateMixin {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _updateDurations();
+    final bool accessibleNavigation =
+        MediaQuery.accessibleNavigationOf(context);
+    if (accessibleNavigation != _accessibleNavigation) {
+      _accessibleNavigation = accessibleNavigation;
+      if (_started && _config.action != null && !_exiting) {
+        _restartTimer();
+      }
+    }
     if (!_started) {
       _started = true;
       _version = _entry.version;
@@ -109,6 +124,12 @@ class _ToastItemState extends State<ToastItem> with TickerProviderStateMixin {
       _config.animation ?? _theme.animation!;
 
   Duration? get _resolvedDuration {
+    // Like SnackBar: a toast with an action stays until closed while an
+    // accessibility service navigates the screen, so the action stays
+    // reachable.
+    if (_accessibleNavigation && _config.action != null) {
+      return null;
+    }
     final Duration? duration = _config.duration ??
         (_config.type == ToastType.loading ? null : _theme.duration);
     if (duration == null || duration <= Duration.zero) {
@@ -211,9 +232,10 @@ class _ToastItemState extends State<ToastItem> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _entry
-      ..removeListener(_handleEntryChanged)
-      ..attached = false;
+    _entry.removeListener(_handleEntryChanged);
+    if (identical(_entry.owner, this)) {
+      _entry.owner = null;
+    }
     _timer?.dispose();
     _curved.dispose();
     _visibility.dispose();
@@ -426,6 +448,7 @@ class DefaultToastView extends StatelessWidget {
     ];
 
     final Widget? icon = s.showIcon! ? _icon(s) : null;
+    final _TapTargetLink closeLink = _TapTargetLink();
     final ToastAction? action = entry.action;
     final List<Widget> row = <Widget>[
       if (icon != null) ...<Widget>[icon, const SizedBox(width: 12)],
@@ -459,6 +482,7 @@ class DefaultToastView extends StatelessWidget {
           color: foreground.withValues(alpha: foreground.a * 0.7),
           icon: s.closeIcon,
           onPressed: entry.dismiss,
+          link: closeLink,
         ),
       ],
     ];
@@ -472,6 +496,9 @@ class DefaultToastView extends StatelessWidget {
         children: row,
       ),
     );
+    if (s.showCloseButton!) {
+      content = _TapTargetArea(link: closeLink, child: content);
+    }
 
     if (showProgressBar) {
       content = Stack(
@@ -604,11 +631,13 @@ class _CloseButton extends StatelessWidget {
     required this.color,
     required this.icon,
     required this.onPressed,
+    required this.link,
   });
 
   final Color color;
   final Widget? icon;
   final VoidCallback onPressed;
+  final _TapTargetLink link;
 
   @override
   Widget build(BuildContext context) {
@@ -617,10 +646,11 @@ class _CloseButton extends StatelessWidget {
           MaterialLocalizations,
         )?.closeButtonTooltip ??
         'Close';
-    return Semantics(
-      button: true,
+    return _TapTarget(
+      link: link,
       label: label,
-      excludeSemantics: true,
+      textDirection: Directionality.of(context),
+      onTap: onPressed,
       child: InkResponse(
         onTap: onPressed,
         radius: 18,
@@ -633,5 +663,185 @@ class _CloseButton extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// The minimum tap target of the close button, as in Material.
+const double _kMinTapTarget = kMinInteractiveDimension;
+
+/// Connects a [_TapTarget] to the [_TapTargetArea] around it.
+class _TapTargetLink {
+  _RenderTapTarget? target;
+}
+
+/// Lets taps near the close button reach it, without changing layout.
+///
+/// Wraps the padded toast content. A tap that hits nothing else inside this
+/// area, but falls within the enlarged rectangle of the linked target, is
+/// sent to the center of the target.
+class _TapTargetArea extends SingleChildRenderObjectWidget {
+  const _TapTargetArea({required this.link, required super.child});
+
+  final _TapTargetLink link;
+
+  @override
+  _RenderTapTargetArea createRenderObject(BuildContext context) =>
+      _RenderTapTargetArea(link);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderTapTargetArea renderObject,
+  ) {
+    renderObject.link = link;
+  }
+}
+
+class _RenderTapTargetArea extends RenderProxyBox {
+  _RenderTapTargetArea(this.link);
+
+  _TapTargetLink link;
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    if (super.hitTest(result, position: position)) {
+      return true;
+    }
+    final _RenderTapTarget? target = link.target;
+    if (target == null || !target.attached || !size.contains(position)) {
+      return false;
+    }
+    final Matrix4 transform = target.getTransformTo(this);
+    final Rect area =
+        MatrixUtils.transformRect(transform, target.semanticBounds);
+    if (!area.contains(position)) {
+      return false;
+    }
+    return result.addWithPaintTransform(
+      transform: transform,
+      position: position,
+      hitTest: (BoxHitTestResult result, Offset _) => target.hitTest(
+        result,
+        position: target.size.center(Offset.zero),
+      ),
+    );
+  }
+}
+
+/// A button whose semantics and tap area are at least [_kMinTapTarget]
+/// square, while it lays out and paints at the size of [child].
+class _TapTarget extends SingleChildRenderObjectWidget {
+  const _TapTarget({
+    required this.link,
+    required this.label,
+    required this.textDirection,
+    required this.onTap,
+    required super.child,
+  });
+
+  final _TapTargetLink link;
+  final String label;
+  final TextDirection textDirection;
+  final VoidCallback onTap;
+
+  @override
+  _RenderTapTarget createRenderObject(BuildContext context) {
+    return _RenderTapTarget(
+      link: link,
+      label: label,
+      textDirection: textDirection,
+      onTap: onTap,
+    );
+  }
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderTapTarget renderObject) {
+    renderObject
+      ..link = link
+      ..label = label
+      ..textDirection = textDirection
+      ..onTap = onTap;
+  }
+}
+
+class _RenderTapTarget extends RenderProxyBox {
+  _RenderTapTarget({
+    required _TapTargetLink link,
+    required String label,
+    required TextDirection textDirection,
+    required this.onTap,
+  })  : _link = link,
+        _label = label,
+        _textDirection = textDirection;
+
+  _TapTargetLink _link;
+  set link(_TapTargetLink value) {
+    if (identical(value, _link)) {
+      return;
+    }
+    if (identical(_link.target, this)) {
+      _link.target = null;
+    }
+    _link = value;
+    if (attached) {
+      _link.target = this;
+    }
+  }
+
+  String _label;
+  set label(String value) {
+    if (value == _label) {
+      return;
+    }
+    _label = value;
+    markNeedsSemanticsUpdate();
+  }
+
+  TextDirection _textDirection;
+  set textDirection(TextDirection value) {
+    if (value == _textDirection) {
+      return;
+    }
+    _textDirection = value;
+    markNeedsSemanticsUpdate();
+  }
+
+  VoidCallback onTap;
+
+  @override
+  void attach(PipelineOwner owner) {
+    super.attach(owner);
+    _link.target = this;
+  }
+
+  @override
+  void detach() {
+    if (identical(_link.target, this)) {
+      _link.target = null;
+    }
+    super.detach();
+  }
+
+  @override
+  Rect get semanticBounds => Rect.fromCenter(
+        center: size.center(Offset.zero),
+        width: math.max(size.width, _kMinTapTarget),
+        height: math.max(size.height, _kMinTapTarget),
+      );
+
+  @override
+  void visitChildrenForSemantics(RenderObjectVisitor visitor) {
+    // The label describes the button; the icon adds nothing.
+  }
+
+  @override
+  void describeSemanticsConfiguration(SemanticsConfiguration config) {
+    super.describeSemanticsConfiguration(config);
+    config
+      ..isSemanticBoundary = true
+      ..isButton = true
+      ..label = _label
+      ..textDirection = _textDirection
+      ..onTap = () => onTap();
   }
 }
