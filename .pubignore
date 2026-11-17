@@ -1,0 +1,31 @@
+# .pubignore replaces the root .gitignore for pub, so repeat its rules here.
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+*.iml
+*.ipr
+*.iws
+.idea/
+/pubspec.lock
+**/doc/api/
+.dart_tool/
+.flutter-plugins-dependencies
+/build/
+/coverage/
+
+# Workspace files that are not part of the package.
+WORKSPACE_PROTOCOL.md
+paseo.json
+AGENTS.md
+CLAUDE.md
+DESIGN.md
+example/build/
