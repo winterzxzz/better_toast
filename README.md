@@ -13,11 +13,11 @@ anywhere, **with or without a `BuildContext`**. Stack or queue toasts,
 toasts**, and restyle every pixel in layers, from a global theme down to a
 fully custom widget. Pure Dart, zero dependencies, every platform.
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/demo.webp" width="300" alt="Animated demo: toasts slide in and stack, a loading toast turns into success, an error appears, and a toast is swiped away">
-</p>
+![better_toast: beautiful, customizable toasts for Flutter](https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/banner.webp)
 
-![better_toast screenshots: toast types, glassmorphism, dark mode and custom styles](https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/banner.webp)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/demo.webp" width="320" alt="Animated demo: toasts stack, a loading toast turns into a success, an error offers Retry, and a toast is swiped away">
+</p>
 
 ## Contents
 
@@ -62,19 +62,13 @@ fully custom widget. Pure Dart, zero dependencies, every platform.
 
 ## Screenshots
 
-| Toast types | Dark, bottom, progress bar | Glassmorphism | Custom builder |
-| :---: | :---: | :---: | :---: |
-| ![Four stacked toasts: success, error with a Retry action, warning and info](https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/types.webp) | ![Dark-mode toasts at the bottom with an Undo action, close buttons and a progress bar](https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/dark_bottom.webp) | ![Frosted-glass toasts over a colorful gradient](https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/glass.webp) | ![A custom message toast above solid red and green toasts](https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/custom.webp) |
+Every toast below is a real better_toast widget, rendered by Flutter.
 
-**Update in place / promise toasts**: one toast goes from loading to success
-without flicker or duplicates.
-
-![Three steps of one toast: Uploading, then Almost there, then Uploaded with a View action](https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/promise.webp)
-
-**Positions and RTL**: seven fixed positions, plus `topStart` / `topEnd` /
-`bottomStart` / `bottomEnd` that mirror in right-to-left layouts.
-
-![Tablet with toasts at all seven positions, next to a right-to-left phone with mirrored toasts](https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/positions.webp)
+| Toast types | Promise toasts | Any style |
+| :---: | :---: | :---: |
+| <img src="https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/01_types.webp" width="260" alt="Four stacked toasts: success, error with Retry, warning and info over a photo feed"> | <img src="https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/02_promise.webp" width="260" alt="A loading toast updated in place into a success toast with a View action"> | <img src="https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/03_styles.webp" width="260" alt="Glass blur, gradient, black pill and soft yellow toasts over album art"> |
+| **Dark mode** | **Positions + RTL** | **Fully custom** |
+| <img src="https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/04_dark.webp" width="260" alt="Dark-theme toasts with Undo and Retry actions, close buttons and progress bars"> | <img src="https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/05_positions.webp" width="260" alt="Toasts at topStart, topEnd, center, bottomStart and bottomEnd in a right-to-left layout"> | <img src="https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/06_custom.webp" width="260" alt="Custom-built toasts: an added-to-bag card, an incoming message and a reward badge"> |
 
 ## Installation
 
