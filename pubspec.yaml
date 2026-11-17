@@ -4,11 +4,15 @@ version: 0.1.0
 repository: https://github.com/winterzxzz/better_toast
 issue_tracker: https://github.com/winterzxzz/better_toast/issues
 screenshots:
-  - description: Info, warning, error and success toasts stacked at the top.
+  - description: Success, error with action, warning and info toasts stacked at the top.
     path: doc/screenshots/types.webp
+  - description: A loading toast updated in place until it shows success.
+    path: doc/screenshots/promise.webp
+  - description: Every ToastPosition, plus start and end positions in right-to-left.
+    path: doc/screenshots/positions.webp
   - description: Dark theme toasts at the bottom with a progress bar and actions.
     path: doc/screenshots/dark_bottom.webp
-  - description: A glassmorphism toast style made with one ToastStyle.
+  - description: Glassmorphism toasts made with a single ToastStyle.
     path: doc/screenshots/glass.webp
   - description: A custom builder toast and per-type colors.
     path: doc/screenshots/custom.webp

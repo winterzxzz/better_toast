@@ -13,7 +13,11 @@ anywhere, **with or without a `BuildContext`**. Stack or queue toasts,
 toasts**, and restyle every pixel in layers, from a global theme down to a
 fully custom widget. Pure Dart, zero dependencies, every platform.
 
-![better_toast screenshots: toast types, dark theme with progress bar, glassmorphism style, custom builder](https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/banner.webp)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/demo.webp" width="300" alt="Animated demo: toasts slide in and stack, a loading toast turns into success, an error appears, and a toast is swiped away">
+</p>
+
+![better_toast screenshots: toast types, glassmorphism, dark mode and custom styles](https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/banner.webp)
 
 ## Contents
 
@@ -60,7 +64,17 @@ fully custom widget. Pure Dart, zero dependencies, every platform.
 
 | Toast types | Dark, bottom, progress bar | Glassmorphism | Custom builder |
 | :---: | :---: | :---: | :---: |
-| ![Info, warning, error and success toasts](https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/types.webp) | ![Dark theme toasts at the bottom with a progress bar](https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/dark_bottom.webp) | ![Glassmorphism toast style](https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/glass.webp) | ![Custom builder toast and per-type colors](https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/custom.webp) |
+| ![Four stacked toasts: success, error with a Retry action, warning and info](https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/types.webp) | ![Dark-mode toasts at the bottom with an Undo action, close buttons and a progress bar](https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/dark_bottom.webp) | ![Frosted-glass toasts over a colorful gradient](https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/glass.webp) | ![A custom message toast above solid red and green toasts](https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/custom.webp) |
+
+**Update in place / promise toasts**: one toast goes from loading to success
+without flicker or duplicates.
+
+![Three steps of one toast: Uploading, then Almost there, then Uploaded with a View action](https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/promise.webp)
+
+**Positions and RTL**: seven fixed positions, plus `topStart` / `topEnd` /
+`bottomStart` / `bottomEnd` that mirror in right-to-left layouts.
+
+![Tablet with toasts at all seven positions, next to a right-to-left phone with mirrored toasts](https://raw.githubusercontent.com/winterzxzz/better_toast/main/doc/screenshots/positions.webp)
 
 ## Installation
 
@@ -86,7 +100,9 @@ MaterialApp(
 );
 ```
 
-Already using `builder`? Chain it:
+Already using `builder`? Chain it. Your builder wraps the toast host, so
+anything it adds (a `Directionality`, a `MediaQuery` text scale, a `Theme`,
+`Localizations`) applies to the toasts too:
 
 ```dart
 MaterialApp(
@@ -133,9 +149,12 @@ final handle = BetterToast.loading('Uploading…');
 await upload();
 handle.update(text: 'Uploaded', type: ToastType.success);
 
-// Same id = same toast, updated in place.
+// Same id = same toast, replaced in place (the whole config is replaced).
 BetterToast.loading('Uploading 40%', id: 'upload');
 BetterToast.loading('Uploading 80%', id: 'upload');
+
+// `update` merges: fields you leave out are kept. Clear them explicitly.
+handle.update(type: ToastType.success, text: 'Done', clearAction: true);
 
 handle.dismiss();
 BetterToast.dismiss('upload');
@@ -282,7 +301,7 @@ BetterToastThemeData(
 | `BetterToast.custom(builder:, ...)` | A toast with a fully custom visual. |
 | `BetterToast.promise(future, loading:, success:, error:)` | Loading → success / error. |
 | `BetterToast.dismiss(id)` / `.dismissAll()` / `.isActive(id)` | Global control. |
-| `ToastHandle` | `update()`, `dismiss()`, `pause()`, `resume()`, `isActive`, `closed`, `progress`, `id`. |
+| `ToastHandle` | `update()` (merge, with `clearTitle` / `clearDescription` / `clearAction` / `clearStyle`), `dismiss()`, `pause()`, `resume()`, `isActive`, `closed`, `progress`, `id`. |
 | `BetterToastThemeData` | Global defaults; also a `ThemeExtension`. |
 | `BetterToastTheme.of(context)` / `.resolveStyle(...)` | Read the effective theme or style. |
 | `ToastStyle` | Visual overrides. `merge`, `copyWith`, `lerp`, `fallback`. |
@@ -358,10 +377,16 @@ Use `stackMode: ToastStackMode.queue` (wait in line) or
 **Does it respect accessibility settings?**
 Toasts are announced as live regions. When the platform asks to reduce
 motion, toasts appear and disappear without animation, but their display time
-stays the same. Text scales with the system setting.
+stays the same. Text scales with the system setting. Like `SnackBar`, a toast
+with an action does not close by itself while a screen reader is in use
+(`MediaQuery.accessibleNavigation`), so the action stays reachable. The close
+button has a 48 × 48 tap target.
 
 **Does a toast keep its timer while the app is in the background?**
-No. The timer is frame-driven, so it pauses while the app is not drawing.
+No. Timers pause while the app is not in the foreground and continue where
+they left off when the user comes back, so a toast is never missed. A toast
+you paused with `handle.pause()` stays paused. On desktop, "not in the
+foreground" includes a window that has lost focus.
 
 ## Contributing
 
